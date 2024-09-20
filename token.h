@@ -1,6 +1,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <string>
 
 using namespace std;
 
@@ -53,3 +54,10 @@ const string RPAREN = ")";
 const string LBRACE = "{";
 const string RBRACE = "}";
 const string EOF_TYPE = "";
+const string COLON = ";";
+const string DEF = "def";
+const string RETURN = "return";
+
+const string STRING = "str";
+const string IDENT = "ident";
+const string INT = "int";

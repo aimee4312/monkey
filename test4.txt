@@ -1,0 +1,17 @@
+five = 5
+ten = 10
+
+def add(x, y):
+    return x + y
+
+result = add(five, ten)
+!-/*5
+5 < 10 > 5
+
+if 5 < 10:
+    result_if = True
+else:
+    result_if = False
+
+10 == 10
+10 != 9

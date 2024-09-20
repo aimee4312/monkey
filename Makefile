@@ -1,8 +1,8 @@
 CXX = g++
 CXXFLAGS = -std=c++11
 
-TARGET = main
-SRCS = main.cpp
+TARGET = lexer
+SRCS = lexer.cpp
 OBJS = $(SRCS:.cpp=.o)
 
 all: $(TARGET)
