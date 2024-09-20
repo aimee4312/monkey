@@ -1,4 +1,4 @@
-Test1: Passed
-Test2: Failed
-Test3: Failed
-Test4: Failed
+Test1: Passed (Tokenizes basic operators)
+Test2: Passed (Tokenizes identifiers, ints, strings)
+Test3: Failed (Tokenizes functions and returns)
+Test4: Failed (Tokenizes ==, !=, and everything else above)

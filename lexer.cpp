@@ -23,15 +23,28 @@ bool isDigit(char c) {
 }
 
 // Reads the file until is not char and returns the string
-string indentifier(Lexer &l) {
+string readIdent(Lexer &l) {
   string ident = "";
-  Token tok;
-  while (isChar(l.input.peek())) {
-    ident += l.input.peek();
+  while (isChar(l.ch)) {
+    ident += l.ch;
     readChar(l);
   }
-  cout << ident << endl;
   return ident;
+}
+
+// Reads strings
+string readStr(Lexer &l) {
+  string s = "\"";
+  readChar(l);
+  while (l.ch != '"' && l.ch != 0) {
+    s += l.ch;
+    readChar(l);
+  }
+  if (l.ch == '"') {
+    s += l.ch;
+    readChar(l);
+  }
+  return s;
 }
 
 // Skips white space
@@ -45,7 +58,7 @@ string readNum(Lexer &l) {
   string s = "";
   while (isdigit(l.ch)) {
     s += l.ch;
-    readChar(l.ch);
+    readChar(l);
   }
   return s;
 } 
@@ -53,6 +66,7 @@ string readNum(Lexer &l) {
 // Reads next token and tokenizes it
 Token nextToken(Lexer &l) {
   Token tok;
+  skipWhiteSpace(l);
 
   switch (l.ch)
   {
@@ -77,11 +91,14 @@ Token nextToken(Lexer &l) {
   case '}':
     tok.setValues(RBRACE, "}");
     break;
+  case '"':
+    tok.setValues(STRING, readStr(l));
+    break;
   default:
     if (isChar(l.ch)) {
-      tok.setValues(IDENT, indentifier(l));
+      tok.setValues(IDENT, readIdent(l));
     } else if (isdigit(l.ch)) {
-      
+      tok.setValues(INT, readNum(l));
     } else {
       tok.setValues(EOF_TYPE, "");
     }
@@ -102,7 +119,7 @@ void testNextToken(vector<Test> test) {
       throw runtime_error("Token type mismatch for: " + tok.type);
     } 
     if (t.exepectedLiteral != tok.literal) {
-      throw runtime_error("Token literal mismatch" + tok.literal);
+      throw runtime_error("Token literal mismatch: " + tok.literal);
     }
     count++;
   }
