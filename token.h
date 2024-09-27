@@ -46,18 +46,40 @@ struct Lexer {
     }
 };
 
+/* Special Symbols */
 const string ASSIGN = "=";
 const string PLUS = "+";
+const string MINUS = "-";
 const string COMMA = ",";
 const string LPAREN = "(";
 const string RPAREN = ")";
 const string LBRACE = "{";
 const string RBRACE = "}";
 const string EOF_TYPE = "";
-const string COLON = ";";
+const string COLON = ":";
+const string BANG = "!";
+const string EQ = "==";
+const string NOT_EQ = "!=";
+const string LT = "<";
+const string LT_EQ = "<=";
+const string GT = ">";
+const string GT_EQ = ">=";
+const string SLASH = "/";
+const string DOUBLE_SLASH = "//";
+const string MULTIPLY = "*";
+const string MODULO = "%";
+
+/* Keywords */
 const string DEF = "def";
 const string RETURN = "return";
+const string IF = "if";
+const string ELSE = "else";
 
+/* Identifiers */
 const string STRING = "str";
 const string IDENT = "ident";
 const string INT = "int";
+
+/* Booleans */
+const string TRUE = "True";
+const string FALSE = "False";

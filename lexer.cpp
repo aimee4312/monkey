@@ -1,5 +1,6 @@
 #include "token.h"
 #include <vector>
+#include <unordered_map>
 using namespace std;
 
 // Reads the next char in the file
@@ -22,12 +23,31 @@ bool isDigit(char c) {
   return isdigit(c);
 }
 
+// look up table for keywords
+unordered_map<string, string> keywords = {
+  {"def", DEF},
+  {"return", RETURN},
+  {"if", IF},
+  {"else", ELSE},
+  {"True", TRUE},
+  {"False", FALSE}
+};
+
+// use look up table to check for keyword or IDENT
+string lookupIdent (string ident) {
+  if (keywords.find(ident) != keywords.end()) {
+    return keywords[ident];
+  }
+  return IDENT;
+}
+
 // Reads the file until is not char and returns the string
 string readIdent(Lexer &l) {
   string ident = "";
-  while (isChar(l.ch)) {
+  ident += l.ch;
+  while (isChar(l.input.peek())) { 
+    readChar(l);     
     ident += l.ch;
-    readChar(l);
   }
   return ident;
 }
@@ -47,6 +67,15 @@ string readStr(Lexer &l) {
   return s;
 }
 
+// Checks if next char is =
+bool checkEQ(Lexer &l){
+  if (l.input.peek() == '='){
+    readChar(l);
+    return true;
+  }
+  return false;
+}
+
 // Skips white space
 void skipWhiteSpace(Lexer &l) {
   while (l.ch == ' ' || l.ch == '\n' || l.ch == '\t' || l.ch == '\r') {
@@ -54,11 +83,13 @@ void skipWhiteSpace(Lexer &l) {
   }
 }
 
+// Reads digits
 string readNum(Lexer &l) {
   string s = "";
-  while (isdigit(l.ch)) {
+  s += l.ch;
+  while (isdigit(l.input.peek())) {    
+    readChar(l);  
     s += l.ch;
-    readChar(l);
   }
   return s;
 } 
@@ -67,11 +98,23 @@ string readNum(Lexer &l) {
 Token nextToken(Lexer &l) {
   Token tok;
   skipWhiteSpace(l);
-
   switch (l.ch)
   {
   case '=':
-    tok.setValues(ASSIGN, "=");
+    if (checkEQ(l)) {
+      tok.setValues(EQ, "==");
+    } else {
+      tok.setValues(ASSIGN, "=");
+    }
+    break;
+
+  case '/':
+    if(l.input.peek() == '/') {
+      readChar(l);
+      tok.setValues(DOUBLE_SLASH, "//");
+    } else {
+      tok.setValues(SLASH, "/");
+    }
     break;
   case '+':
     tok.setValues(PLUS, "+");
@@ -94,9 +137,44 @@ Token nextToken(Lexer &l) {
   case '"':
     tok.setValues(STRING, readStr(l));
     break;
+  case ':':
+    tok.setValues(COLON, ":");
+    break;
+  case '!':
+    if (checkEQ(l)) {
+      tok.setValues(NOT_EQ, "!=");
+    } else {
+      tok.setValues(BANG, "!");
+    }
+    break;
+  case '-':
+    tok.setValues(MINUS, "-");
+    break;
+  case '*':
+    tok.setValues(MULTIPLY, "*");
+    break;
+  case '>':
+    if (checkEQ(l)) {
+        tok.setValues(GT_EQ, ">=");
+      } else {
+        tok.setValues(GT, ">");
+    }
+    break;
+  case '<':
+    if (checkEQ(l)) {
+        tok.setValues(LT_EQ, "<=");
+      } else {
+        tok.setValues(LT, "<");
+    }
+    break;
+  case '%':
+    tok.setValues(MODULO, "%");
+    break;
+
   default:
     if (isChar(l.ch)) {
-      tok.setValues(IDENT, readIdent(l));
+      string str = readIdent(l);
+      tok.setValues(lookupIdent(str), str);
     } else if (isdigit(l.ch)) {
       tok.setValues(INT, readNum(l));
     } else {
@@ -110,16 +188,16 @@ Token nextToken(Lexer &l) {
 
 // Runs the tokenizer with a initialized lexer and test file
 void testNextToken(vector<Test> test) {
-  Lexer l("test2.txt");
+  Lexer l("test4.txt");
   readChar(l);
   int count = 0;
   for (const Test& t: test) {
     Token tok = nextToken(l);
     if (t.expectedType != tok.type) {
-      throw runtime_error("Token type mismatch for: " + tok.type);
+      throw runtime_error("Token type mismatch for: " + tok.type + ", expected: " + t.expectedType + "\nToken literal: " + tok.literal + ", expected: " + t.exepectedLiteral);
     } 
     if (t.exepectedLiteral != tok.literal) {
-      throw runtime_error("Token literal mismatch: " + tok.literal);
+      throw runtime_error("Token literal mismatch: " + tok.literal + ", expected: " + t.exepectedLiteral + "\nToken type: " + tok.type + ", expected: " + t.expectedType);
     }
     count++;
   }
@@ -127,39 +205,111 @@ void testNextToken(vector<Test> test) {
 
 int main() {
   vector<Test> test;
+  // five = 5
   test.push_back(Test(IDENT, "five"));
   test.push_back(Test(ASSIGN, "="));
   test.push_back(Test(INT, "5"));
 
+  // ten = 10
   test.push_back(Test(IDENT, "ten"));
   test.push_back(Test(ASSIGN, "="));
   test.push_back(Test(INT, "10"));
 
-  test.push_back(Test(IDENT, "hello"));
+  // def add(x, y):
+  test.push_back(Test(DEF, "def"));
+  test.push_back(Test(IDENT, "add"));
+  test.push_back(Test(LPAREN, "("));
+  test.push_back(Test(IDENT, "x"));
+  test.push_back(Test(COMMA, ","));
+  test.push_back(Test(IDENT, "y"));
+  test.push_back(Test(RPAREN, ")"));
+  test.push_back(Test(COLON, ":"));
+
+  // return x + y
+  test.push_back(Test(RETURN, "return"));
+  test.push_back(Test(IDENT, "x"));
+  test.push_back(Test(PLUS, "+"));
+  test.push_back(Test(IDENT, "y"));
+
+  // result = add(five, ten)
+  test.push_back(Test(IDENT, "result"));
   test.push_back(Test(ASSIGN, "="));
-  test.push_back(Test(STRING, "\"hello\""));
+  test.push_back(Test(IDENT, "add"));
+  test.push_back(Test(LPAREN, "("));
+  test.push_back(Test(IDENT, "five"));
+  test.push_back(Test(COMMA, ","));
+  test.push_back(Test(IDENT, "ten"));
+  test.push_back(Test(RPAREN, ")"));
 
-// test.push_back(Test(DEF, "def"));
-// test.push_back(Test(IDENT, "add"));
-// test.push_back(Test(LPAREN, "("));
-// test.push_back(Test(IDENT, "x"));
-// test.push_back(Test(COMMA, ","));
-// test.push_back(Test(IDENT, "y"));
-// test.push_back(Test(RPAREN, ")"));
-// test.push_back(Test(COLON, ":"));
-// test.push_back(Test(RETURN, "return"));
-// test.push_back(Test(IDENT, "x"));
-// test.push_back(Test(PLUS, "+"));
-// test.push_back(Test(IDENT, "y"));
+  // !-/*5
+  test.push_back(Test(BANG, "!"));
+  test.push_back(Test(MINUS, "-"));
+  test.push_back(Test(SLASH, "/"));
+  test.push_back(Test(MULTIPLY, "*"));
+  test.push_back(Test(INT, "5"));
 
-// test.push_back(Test(IDENT, "result"));
-// test.push_back(Test(ASSIGN, "="));
-// test.push_back(Test(IDENT, "add"));
-// test.push_back(Test(LPAREN, "("));
-// test.push_back(Test(IDENT, "five"));
-// test.push_back(Test(COMMA, ","));
-// test.push_back(Test(IDENT, "ten"));
-// test.push_back(Test(RPAREN, ")"));
+  // 5 < 10 > 5
+  test.push_back(Test(INT, "5"));
+  test.push_back(Test(LT, "<"));
+  test.push_back(Test(INT, "10"));
+  test.push_back(Test(GT, ">"));
+  test.push_back(Test(INT, "5"));
+
+  // if 5 < 10:
+  test.push_back(Test(IF, "if"));
+  test.push_back(Test(INT, "5"));
+  test.push_back(Test(LT, "<"));
+  test.push_back(Test(INT, "10"));
+  test.push_back(Test(COLON, ":"));
+
+  // result_if = True
+  test.push_back(Test(IDENT, "result_if"));
+  test.push_back(Test(ASSIGN, "="));
+  test.push_back(Test(TRUE, "True"));
+
+  // else:
+  test.push_back(Test(ELSE, "else"));
+  test.push_back(Test(COLON, ":"));
+
+  // result_if = False
+  test.push_back(Test(IDENT, "result_if"));
+  test.push_back(Test(ASSIGN, "="));
+  test.push_back(Test(FALSE, "False"));
+
+  // 10 == 10
+  test.push_back(Test(INT, "10"));
+  test.push_back(Test(EQ, "=="));
+  test.push_back(Test(INT, "10"));
+
+  // 10 != 9
+  test.push_back(Test(INT, "10"));
+  test.push_back(Test(NOT_EQ, "!="));
+  test.push_back(Test(INT, "9"));
+
+  // 10 // 3
+  test.push_back(Test(INT, "10"));
+  test.push_back(Test(DOUBLE_SLASH, "//"));
+  test.push_back(Test(INT, "3"));
+
+  // 10 / 3
+  test.push_back(Test(INT, "10"));
+  test.push_back(Test(SLASH, "/"));
+  test.push_back(Test(INT, "3"));
+
+  // 10 % 3
+  test.push_back(Test(INT, "10"));
+  test.push_back(Test(MODULO, "%"));
+  test.push_back(Test(INT, "3"));
+
+  // 10 <= 3
+  test.push_back(Test(INT, "10"));
+  test.push_back(Test(LT_EQ, "<="));
+  test.push_back(Test(INT, "3"));
+
+  // 10 >= 3
+  test.push_back(Test(INT, "10"));
+  test.push_back(Test(GT_EQ, ">="));
+  test.push_back(Test(INT, "3"));
 
   testNextToken(test);
   return 0;
